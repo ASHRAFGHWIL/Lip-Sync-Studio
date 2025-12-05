@@ -3,6 +3,7 @@ import { AppView } from './types';
 import ScriptWriter from './components/ScriptWriter';
 import VoiceStudio from './components/VoiceStudio';
 import AvatarStudio from './components/AvatarStudio';
+import VideoStudio from './components/VideoStudio';
 import LiveRehearsal from './components/LiveRehearsal';
 import { 
   LayoutDashboard, 
@@ -10,16 +11,23 @@ import {
   Mic2, 
   Image as ImageIcon, 
   Radio, 
-  Github 
+  Github,
+  Clapperboard
 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
   const [sharedScript, setSharedScript] = useState<string>('');
+  const [sharedImage, setSharedImage] = useState<string>('');
 
   const handleUseScript = (text: string) => {
     setSharedScript(text);
     setCurrentView(AppView.VOICE_STUDIO);
+  };
+
+  const handleGenerateVideo = (imageUrl: string) => {
+    setSharedImage(imageUrl);
+    setCurrentView(AppView.VIDEO_STUDIO);
   };
 
   const NavButton = ({ view, icon: Icon, label }: { view: AppView, icon: any, label: string }) => (
@@ -78,10 +86,11 @@ const App: React.FC = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
               <NavButton view={AppView.SCRIPT_WRITER} icon={FileText} label="كاتب السيناريو" />
               <NavButton view={AppView.VOICE_STUDIO} icon={Mic2} label="استوديو الصوت" />
               <NavButton view={AppView.AVATAR_STUDIO} icon={ImageIcon} label="توليد الشخصيات" />
+              <NavButton view={AppView.VIDEO_STUDIO} icon={Clapperboard} label="فيديو سينمائي" />
               <NavButton view={AppView.LIVE_REHEARSAL} icon={Radio} label="المدرب المباشر" />
             </div>
 
@@ -89,7 +98,7 @@ const App: React.FC = () => {
               {[
                 { title: "كتابة ذكية", desc: "لا تنفد أفكارك أبداً. دع Gemini Flash يكتب لك المشهد الفيرال القادم.", color: "text-purple-400" },
                 { title: "صوت واقعي", desc: "أنشئ تعليقات صوتية احترافية لمزامنة الشفاه باستخدام أحدث تقنيات تحويل النص إلى كلام.", color: "text-cyan-400" },
-                { title: "تدريب مباشر", desc: "تدرب على أدائك مع مدرب Gemini Live API.", color: "text-emerald-400" }
+                { title: "إنتاج سينمائي", desc: "حول صورك إلى مقاطع فيديو حية عالية الجودة باستخدام نموذج Veo الجديد.", color: "text-orange-400" }
               ].map((item, i) => (
                 <div key={i} className="bg-slate-800/20 p-6 rounded-2xl border border-slate-800">
                   <h3 className={`font-bold text-lg mb-2 ${item.color}`}>{item.title}</h3>
@@ -109,7 +118,8 @@ const App: React.FC = () => {
              
              {currentView === AppView.SCRIPT_WRITER && <ScriptWriter onUseScript={handleUseScript} />}
              {currentView === AppView.VOICE_STUDIO && <VoiceStudio initialText={sharedScript} />}
-             {currentView === AppView.AVATAR_STUDIO && <AvatarStudio />}
+             {currentView === AppView.AVATAR_STUDIO && <AvatarStudio onGenerateVideo={handleGenerateVideo} />}
+             {currentView === AppView.VIDEO_STUDIO && <VideoStudio initialImage={sharedImage} />}
              {currentView === AppView.LIVE_REHEARSAL && <LiveRehearsal />}
           </div>
         )}

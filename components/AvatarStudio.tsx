@@ -1,8 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { generateAvatar } from '../services/gemini';
-import { Loader2, Image as ImageIcon, Download, Sparkles, Upload } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Download, Sparkles, Upload, Video } from 'lucide-react';
 
-const AvatarStudio: React.FC = () => {
+interface AvatarStudioProps {
+  onGenerateVideo?: (imageUrl: string) => void;
+}
+
+const AvatarStudio: React.FC<AvatarStudioProps> = ({ onGenerateVideo }) => {
   const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -105,14 +109,23 @@ const AvatarStudio: React.FC = () => {
                 alt="Generated Avatar" 
                 className="w-full h-full object-cover rounded-xl"
               />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 rounded-xl">
                 <a 
                   href={imageUrl} 
                   download={`avatar-${Date.now()}.png`}
-                  className="py-3 px-6 bg-white text-black font-semibold rounded-full flex items-center gap-2 hover:bg-slate-200 transition-colors"
+                  className="py-2 px-6 bg-white text-black font-semibold rounded-full flex items-center gap-2 hover:bg-slate-200 transition-colors"
                 >
-                  <Download className="w-5 h-5" /> حفظ الصورة
+                  <Download className="w-4 h-4" /> حفظ الصورة
                 </a>
+                
+                {onGenerateVideo && (
+                  <button 
+                    onClick={() => onGenerateVideo(imageUrl)}
+                    className="py-2 px-6 bg-orange-600 text-white font-semibold rounded-full flex items-center gap-2 hover:bg-orange-500 transition-colors shadow-lg shadow-orange-500/30"
+                  >
+                    <Video className="w-4 h-4" /> تحويل إلى فيديو
+                  </button>
+                )}
               </div>
             </div>
           ) : (

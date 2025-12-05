@@ -54,6 +54,7 @@ const ScriptWriter: React.FC<ScriptWriterProps> = ({ onUseScript }) => {
               onChange={(e) => setMood(e.target.value)}
             >
               <option value="Funny">مضحك</option>
+              <option value="Enthusiastic">حماسي</option>
               <option value="Dramatic">درامي</option>
               <option value="Sarcastic">ساخر</option>
               <option value="Inspirational">ملهم</option>

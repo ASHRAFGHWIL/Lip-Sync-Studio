@@ -89,4 +89,60 @@ export const generateAvatar = async (prompt: string): Promise<string> => {
   }
 };
 
+/**
+ * Generate Video using Veo
+ */
+export const generateVideo = async (prompt: string, imageBase64?: string): Promise<string> => {
+  // Create a new instance to ensure we capture the latest API key if selected via UI
+  const aiClient = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+
+  try {
+    let operation;
+    
+    // Clean base64 string if provided (remove data:image/png;base64, prefix)
+    const cleanBase64 = imageBase64 ? imageBase64.split(',')[1] : undefined;
+
+    if (cleanBase64) {
+      operation = await aiClient.models.generateVideos({
+        model: 'veo-3.1-generate-preview',
+        prompt: prompt, 
+        image: {
+          imageBytes: cleanBase64,
+          mimeType: 'image/png', 
+        },
+        config: {
+          numberOfVideos: 1,
+          resolution: '720p',
+          aspectRatio: '16:9'
+        }
+      });
+    } else {
+      operation = await aiClient.models.generateVideos({
+        model: 'veo-3.1-generate-preview',
+        prompt: prompt,
+        config: {
+          numberOfVideos: 1,
+          resolution: '1080p',
+          aspectRatio: '16:9'
+        }
+      });
+    }
+
+    // Poll for completion
+    while (!operation.done) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Check every 5 seconds
+      operation = await aiClient.operations.getVideosOperation({operation: operation});
+    }
+
+    const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!videoUri) throw new Error("Video generation failed");
+
+    // We must append the API key to fetch the video content
+    return `${videoUri}&key=${process.env.API_KEY}`;
+  } catch (error) {
+    console.error("Video generation error:", error);
+    throw error;
+  }
+};
+
 export const getGeminiClient = () => ai;
