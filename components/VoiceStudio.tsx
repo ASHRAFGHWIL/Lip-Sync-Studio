@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { generateSpeech } from '../services/gemini';
 import { VoiceName } from '../types';
-import { decodeBase64, pcmToAudioBuffer } from '../utils/audio';
-import { Loader2, Play, Pause, Download, Mic2 } from 'lucide-react';
+import { decodeBase64, pcmToAudioBuffer, createMp3Blob } from '../utils/audio';
+import { Loader2, Play, Pause, Download, Mic2, FileAudio } from 'lucide-react';
 
 interface VoiceStudioProps {
   initialText?: string;
@@ -36,14 +36,17 @@ const VoiceStudio: React.FC<VoiceStudioProps> = ({ initialText = '' }) => {
       
       const binary = decodeBase64(base64Audio);
       
-      const blob = new Blob([binary], { type: 'application/octet-stream' });
-      setAudioUrl(URL.createObjectURL(blob));
+      // Convert to MP3
+      const mp3Blob = createMp3Blob(binary, 24000);
+      const url = URL.createObjectURL(mp3Blob);
+      setAudioUrl(url);
       
       // Auto-play
       playAudio(binary);
 
     } catch (e) {
       alert("فشل في توليد الصوت. يرجى المحاولة مرة أخرى.");
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -82,9 +85,23 @@ const VoiceStudio: React.FC<VoiceStudioProps> = ({ initialText = '' }) => {
     if (isPlaying) {
       stopAudio();
     } else if (audioUrl) {
+       // Note: We need to regenerate buffer for playback from Blob if we want to reuse mp3, 
+       // but here we might have lost the raw data reference if we only stored audioUrl.
+       // However, playing MP3 directly via Audio element is easier, but for consistency with previous code:
+       // We can fetch the MP3 blob, decode it, and play.
        const response = await fetch(audioUrl);
-       const buffer = await response.arrayBuffer();
-       playAudio(new Uint8Array(buffer));
+       const arrayBuffer = await response.arrayBuffer();
+       const ctx = getAudioContext();
+       const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+       
+       stopAudio();
+       const source = ctx.createBufferSource();
+       source.buffer = audioBuffer;
+       source.connect(ctx.destination);
+       source.onended = () => setIsPlaying(false);
+       source.start();
+       sourceNodeRef.current = source;
+       setIsPlaying(true);
     }
   };
 
@@ -195,14 +212,12 @@ const VoiceStudio: React.FC<VoiceStudioProps> = ({ initialText = '' }) => {
               </div>
               <a 
                 href={audioUrl} 
-                download={`lipsync-audio-${Date.now()}.pcm`}
-                className="flex items-center justify-center gap-2 text-xs text-slate-400 hover:text-white transition-colors"
+                download={`lipsync-audio-${Date.now()}.mp3`}
+                className="flex items-center justify-center gap-2 py-3 bg-slate-700/50 hover:bg-slate-700 rounded-xl text-sm font-medium text-white transition-all border border-slate-600"
               >
-                <Download className="w-3 h-3" /> تحميل ملف خام (PCM)
+                <FileAudio className="w-4 h-4 text-cyan-400" /> 
+                <span>تحميل ملف MP3</span>
               </a>
-              <p className="text-[10px] text-center text-slate-600">
-                ملاحظة: التحميل بتنسيق PCM الخام. استخدم Audacity لتحريره.
-              </p>
             </div>
           )}
         </div>

@@ -1,3 +1,4 @@
+
 // Decodes base64 string to Uint8Array
 export function decodeBase64(base64: string): Uint8Array {
   const binaryString = atob(base64);
@@ -51,4 +52,39 @@ export function createPcmBlob(data: Float32Array): { data: string; mimeType: str
     data: encodeBase64(new Uint8Array(int16.buffer)),
     mimeType: 'audio/pcm;rate=16000',
   };
+}
+
+// Create MP3 Blob using lamejs
+declare const lamejs: any;
+
+export function createMp3Blob(pcmData: Uint8Array, sampleRate: number = 24000): Blob {
+  if (typeof lamejs === 'undefined') {
+    console.error("lamejs not loaded");
+    // Fallback to plain binary if lamejs is missing, though we should warn
+    return new Blob([pcmData], { type: 'application/octet-stream' });
+  }
+
+  // Convert Uint8Array (bytes) to Int16Array (samples)
+  // Ensure the buffer is aligned (make a copy if needed)
+  const samples = new Int16Array(pcmData.buffer.slice(pcmData.byteOffset, pcmData.byteOffset + pcmData.byteLength));
+  
+  const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128); // 1 channel, kbps
+  const mp3Data = [];
+  
+  // Encode in chunks
+  const blockSize = 1152;
+  for (let i = 0; i < samples.length; i += blockSize) {
+    const sampleChunk = samples.subarray(i, i + blockSize);
+    const mp3buf = mp3encoder.encodeBuffer(sampleChunk);
+    if (mp3buf.length > 0) {
+      mp3Data.push(mp3buf);
+    }
+  }
+  
+  const mp3buf = mp3encoder.flush();
+  if (mp3buf.length > 0) {
+    mp3Data.push(mp3buf);
+  }
+
+  return new Blob(mp3Data, { type: 'audio/mp3' });
 }
